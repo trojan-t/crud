@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/trojan-t/crud/cmd/app"
 	"github.com/trojan-t/crud/pkg/customers"
-	"github.com/trojan-t/crud/pkg/security"
+	"github.com/trojan-t/crud/pkg/managers"
 	"go.uber.org/dig"
 )
 
@@ -27,19 +27,19 @@ func main() {
 	}
 }
 
-func execute(host string, port string, dsn string) (err error) {
+func execute(server, port, dsn string) (err error) {
 	deps := []interface{}{
 		app.NewServer,
 		mux.NewRouter,
 		customers.NewService,
-		security.NewService,
+		managers.NewService,
 		func() (*pgxpool.Pool, error) {
 			connCtx, _ := context.WithTimeout(context.Background(), time.Second*5)
 			return pgxpool.Connect(connCtx, dsn)
 		},
 		func(serverHandler *app.Server) *http.Server {
 			return &http.Server{
-				Addr:    net.JoinHostPort(host, port),
+				Addr:    net.JoinHostPort(server, port),
 				Handler: serverHandler,
 			}
 		},
@@ -53,14 +53,10 @@ func execute(host string, port string, dsn string) (err error) {
 		}
 	}
 
-	err = container.Invoke(func(app *app.Server) {
-		app.Init()
-	})
+	err = container.Invoke(func(app *app.Server) { app.Init() })
 	if err != nil {
 		return err
 	}
 
-	return container.Invoke(func(s *http.Server) error {
-		return s.ListenAndServe()
-	})
+	return container.Invoke(func(s *http.Server) error { return s.ListenAndServe() })
 }
