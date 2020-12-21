@@ -53,10 +53,14 @@ func execute(host string, port string, dsn string) (err error) {
 		}
 	}
 
-	err = container.Invoke(func(app *app.Server) { app.Init() })
+	err = container.Invoke(func(app *app.Server) {
+		app.Init()
+	})
 	if err != nil {
 		return err
 	}
 
-	return container.Invoke(func(s *http.Server) error { return s.ListenAndServe() })
+	return container.Invoke(func(s *http.Server) error {
+		return s.ListenAndServe()
+	})
 }
